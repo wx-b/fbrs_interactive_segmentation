@@ -1,4 +1,5 @@
-### Some modifications on excellent work based on https://github.com/saic-vul/fbrs_interactive_segmentation/
+### Some modifications on excellent work by https://github.com/saic-vul/fbrs_interactive_segmentation/
+
 ### See the original repo for the requirements and setup
 ## Added Features:
 1) Added Selection of different classes
