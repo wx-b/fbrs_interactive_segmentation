@@ -7,6 +7,10 @@ from isegm.inference.predictors import get_predictor
 from isegm.utils.vis import draw_with_blend_and_clicks
 
 
+
+
+
+
 class InteractiveController:
     def __init__(self, net, device, predictor_params, update_image_callback, prob_thresh=0.5):
         self.net = net.to(device)
@@ -14,8 +18,10 @@ class InteractiveController:
         self.clicker = clicker.Clicker()
         self.states = []
         self.probs_history = []
+        self.label_class_map={}
         self.object_count = 0
         self._result_mask = None
+        self.color_map={1:(255,0,255),2:(255,0,21),3:(54,0,55),4:(50,100,65),5:(120,99,120),6:(55,87,120),7:(128,25,5),8:(255,0,0),9:(255,0,120),10:(0,120,255)}
 
         self.image = None
         self.image_nd = None
@@ -53,7 +59,6 @@ class InteractiveController:
             self.probs_history.append((self.probs_history[-1][0], pred))
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
-
         self.update_image_callback()
 
     def undo_click(self):
@@ -120,19 +125,21 @@ class InteractiveController:
     def result_mask(self):
         return self._result_mask.copy()
 
-    def get_visualization(self, alpha_blend, click_radius):
+    def get_visualization(self, alpha_blend, click_radius,class_id):
         if self.image is None:
             return None
 
         results_mask_for_vis = self.result_mask
+
         if self.probs_history:
             results_mask_for_vis[self.current_object_prob > self.prob_thresh] = self.object_count + 1
+            self.label_class_map[self.object_count+1]=class_id
 
         vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
-                                         clicks_list=self.clicker.clicks_list, radius=click_radius)
+                                         clicks_list=self.clicker.clicks_list, radius=click_radius,pos_color=self.color_map[class_id])
         if self.probs_history:
             total_mask = self.probs_history[-1][0] > self.prob_thresh
             results_mask_for_vis[np.logical_not(total_mask)] = 0
-            vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend)
+            vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend,pos_color=self.color_map[class_id])
 
         return vis

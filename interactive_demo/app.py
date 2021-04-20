@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import os
+import json
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
@@ -69,7 +70,57 @@ class InteractiveDemoApp(ttk.Frame):
 
             'alpha_blend': tk.DoubleVar(value=0.5),
             'click_radius': tk.IntVar(value=3),
+            'class_id': tk.IntVar(value=1)
         }
+    
+    def save_json(self,json_name,image_name,cur_dir,img,data,class_labels):
+        outfile={}
+        outfile["img_name"]=image_name
+        height,width=img.shape[:2]
+        outfile["height"]=height
+        outfile["width"]=width
+        outfile["labels"]=class_labels
+        outfile["shapes"]=data
+        with open(os.path.join(cur_dir,json_name), 'w') as out:
+            json.dump(outfile, out)
+
+    def draw_bounds(self,img,data,color=(255,0,0)):
+        color=255
+        for point in data:
+            cv2.circle(img,tuple(point),1,color)
+        zero_img=np.zeros(img.shape[:2],dtype=np.uint8)
+        contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+        max_cnt=None
+        max_sze=0
+        for cnt in contours:
+            if len(cnt)>max_sze:
+                max_sze=len(cnt)
+                max_cnt=cnt
+        if max_cnt is None:
+            print("Contour is None")
+        cv2.drawContours(zero_img, max_cnt, -1, 255, 3)
+        max_cnt=max_cnt.squeeze().tolist()
+        return max_cnt
+
+    def _write_json(self,fname,image,class_map):
+        imagefile=fname
+        curr_dir=imagefile.split("/")[:-1]
+        curr_dir="".join(curr_dir)
+        fname=fname.split(".")[:-1]
+        fname="".join(fname)
+        j_file=os.path.join(fname+".json")
+        all_labels=list(class_map.values())
+        all_cnts=[]
+        for label in all_labels:
+            if label==0:
+                continue
+            [cc,rr]=np.where(image==label)
+            XY = list(zip(rr, cc))
+            blankimg=np.zeros(image.shape[:2],dtype=np.uint8)
+            cnt=self.draw_bounds(blankimg,XY)
+            all_cnts.append(cnt)
+        assert len(all_cnts)==len(all_labels) ,"**The class labels and contours for jsona re not equal**"
+        self.save_json(j_file,imagefile,curr_dir,image,all_cnts,all_labels)
 
     def _add_menu(self):
         self.menubar = FocusLabelFrame(self, bd=1)
@@ -164,16 +215,21 @@ class InteractiveDemoApp(ttk.Frame):
 
         self.click_radius_frame = FocusLabelFrame(master, text="Visualisation click radius")
         self.click_radius_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
-                             variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER)
+        FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER)
+
+        self.class_id_frame = FocusLabelFrame(master, text="Class ID")
+        self.class_id_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        FocusHorizontalScale(self.class_id_frame, from_=1, to=20, resolution=1, command=self._update_click_radius,variable=self.state['class_id']).pack(padx=10, anchor=tk.CENTER)
 
     def _set_next_image(self, event):
         if self.current_file_index < len(self.filenames):
+            self.state['class_id'].set(1)
             self.current_file_index += 1
             self._set_image(self.current_file_index)
 
     def _set_forward_image(self, event):
         if self.current_file_index > 0:
+            self.state['class_id'].set(1)
             self.current_file_index -= 1
             self._set_image(self.current_file_index)
 
@@ -181,10 +237,12 @@ class InteractiveDemoApp(ttk.Frame):
         self.menubar.focus_set()
         if self._check_entry(self):
             mask = self.controller.result_mask
+            class_map=self.controller.label_class_map
             if mask is None:
                 return
             if mask.max() < 256:
                 mask = mask.astype(np.uint8)
+            self._write_json(self.filenames[self.current_file_index],mask,class_map)
             cv2.imwrite('{}.png'.format(self.filenames[self.current_file_index]), mask)
 
     def _set_image(self, value):
@@ -195,7 +253,7 @@ class InteractiveDemoApp(ttk.Frame):
     def _load_image_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
-            self.filenames = filedialog.askopenfilenames(parent=self.master, filetypes=[
+            self.filenames = filedialog.askopenfilenames(parent=self.master, multiple=True,filetypes=[
                 ("Images", "*.jpg *.JPG *.jpeg *.png *.bmp *.tiff"),
                 ("All files", "*.*"),
             ], title="Chose an image")
@@ -249,7 +307,6 @@ class InteractiveDemoApp(ttk.Frame):
     def _update_click_radius(self, *args):
         if self.image_on_canvas is None:
             return
-
         self._update_image()
 
     def _change_brs_mode(self, *args):
@@ -304,7 +361,8 @@ class InteractiveDemoApp(ttk.Frame):
 
     def _update_image(self, reset_canvas=False):
         image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'].get(),
-                                                  click_radius=self.state['click_radius'].get())
+                                                  click_radius=self.state['click_radius'].get(),
+                                                  class_id=self.state['class_id'].get())
         if self.image_on_canvas is None:
             self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
             self.image_on_canvas.register_click_callback(self._click_callback)
