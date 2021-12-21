@@ -1,4 +1,5 @@
 ### Some modifications on excellent work by https://github.com/saic-vul/fbrs_interactive_segmentation/
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FAsad-Ismail%2Ffbrs_interactive_segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
 ### See the original repo for the requirements and setup
 ## Added Features:
