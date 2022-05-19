@@ -11,7 +11,7 @@ def predict():
         checkpoint = 'resnet34_dh128_sbd'
 
         data = request.json
-        img = np.array(data['image'])
+        img = np.array(data['image'], np.float)
         x_coord = data['x_coord']
         y_coord = data['y_coord']
         is_pos = data['is_pos']
@@ -27,4 +27,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)
