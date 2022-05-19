@@ -3,7 +3,7 @@ from functools import partial
 import torch
 import numpy as np
 
-from .log import logger
+#from .log import logger
 
 
 def get_dims_with_exclusion(dim, exclude=None):
@@ -28,7 +28,8 @@ def save_checkpoint(net, checkpoints_path, epoch=None, prefix='', verbose=True, 
 
     checkpoint_path = checkpoints_path / checkpoint_name
     if verbose:
-        logger.info(f'Save checkpoint to {str(checkpoint_path)}')
+        print("HACK") # Some error with tensorboard
+        #logger.info(f'Save checkpoint to {str(checkpoint_path)}')
 
     state_dict = net.module.state_dict() if multi_gpu else net.state_dict()
     torch.save(state_dict, str(checkpoint_path))

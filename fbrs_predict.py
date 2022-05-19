@@ -56,9 +56,9 @@ if __name__ == '__main__':
     # unit test (blank image)
     checkpoint = 'resnet34_dh128_sbd' 
     engine = fbrs_engine(checkpoint)
-    x_coord = []
-    y_coord = []
-    is_pos = []
+    x_coord = [200]
+    y_coord = [200]
+    is_pos = [1]
     image = np.zeros((500,500,3),dtype=np.uint8)
     mask_pred = engine.predict(x_coord, y_coord, is_pos, image)
     print('test passed!')
