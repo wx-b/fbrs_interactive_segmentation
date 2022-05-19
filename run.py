@@ -12,9 +12,9 @@ def predict():
 
         data = request.json
         img = np.array(data['image'])
-        x_coord = data['x_coord'].tolist()
-        y_coord = data['y_coord'].tolist()
-        is_pos = data['is_pos'].tolist()
+        x_coord = data['x_coord']
+        y_coord = data['y_coord']
+        is_pos = data['is_pos']
 
         engine = fbrs_predict.fbrs_engine(checkpoint)
 
